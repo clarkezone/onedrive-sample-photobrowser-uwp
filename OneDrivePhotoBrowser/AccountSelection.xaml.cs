@@ -33,6 +33,7 @@ namespace OneDrivePhotoBrowser
     using System;
     using System.Diagnostics;
     using System.Threading.Tasks;
+    using Windows.UI.Popups;
     using Windows.UI.Xaml;
     using Windows.UI.Xaml.Controls;
 
@@ -58,10 +59,26 @@ namespace OneDrivePhotoBrowser
         private readonly string oneDriveConsumerBaseUrl = "https://api.onedrive.com/v1.0";
         private readonly string[] scopes = new string[] { "onedrive.readonly", "wl.signin", "offline_access" };
 
+        private AccountController accountController = new AccountController();
+
         public AccountSelection()
         {
+            accountController.LoggedIn += Ac_LoggedIn;
+            accountController.LoggedOut += Ac_LoggedOut;
             this.InitializeComponent();
             this.Loaded += AccountSelection_Loaded;
+        }
+
+        private async void Ac_LoggedOut(object sender, EventArgs e)
+        {
+            MessageDialog md = new MessageDialog("loggedin");
+            await md.ShowAsync();
+        }
+
+        private async void Ac_LoggedIn(object sender, EventArgs e)
+        {
+            MessageDialog md = new MessageDialog("loggedin");
+            await md.ShowAsync();
         }
 
         private async void AccountSelection_Loaded(object sender, RoutedEventArgs e)
@@ -143,6 +160,7 @@ namespace OneDrivePhotoBrowser
 
                 try
                 {
+            AccountController ac = new AccountController();
                     await authTask;
                     app.NavigationStack.Add(new ItemModel(new Item()));
                     this.Frame.Navigate(typeof(MainPage), e);
@@ -161,8 +179,7 @@ namespace OneDrivePhotoBrowser
 
         private void windows_Click(object sender, RoutedEventArgs e)
         {
-            AccountController ac = new AccountController();
-            ac.ShowAccountController();
+            accountController.ShowAccountController();
         }
     }
 }
