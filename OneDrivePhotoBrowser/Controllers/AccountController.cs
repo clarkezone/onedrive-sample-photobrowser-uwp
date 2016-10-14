@@ -124,16 +124,10 @@
 
         public async Task RefreshCurrentTokenAsync(bool force)
         {
-            try
+            if (string.IsNullOrEmpty(this.CurrentToken) || force)
             {
-                if (string.IsNullOrEmpty(this.CurrentToken) || force)
-                {
-                    var token = await this.GetTokenAsync();
-                    this.CurrentToken = token;
-                }
-            }
-            catch (Exception)
-            {
+                var token = await this.GetTokenAsync();
+                this.CurrentToken = token;
             }
         }
 
@@ -178,37 +172,32 @@
 
         private async Task RequestTokenAndSaveAccount(WebAccountProvider Provider, string Scope, string ClientID)
         {
-            try
+
+            WebTokenRequest webTokenRequest = new WebTokenRequest(Provider, Scope, ClientID);
+
+            // rootPage.NotifyUser("Requesting Web Token", NotifyType.StatusMessage);
+
+            // If the user selected a specific account, RequestTokenAsync will return a token for that account.
+            // The user may be prompted for credentials or to authorize using that account with your app
+            // If the user selected a provider, the user will be prompted for credentials to login to a new account
+            WebTokenRequestResult webTokenRequestResult = await WebAuthenticationCoreManager.RequestTokenAsync(webTokenRequest);
+
+            // If a token was successfully returned, then store the WebAccount Id into local app data
+            // This Id can be used to retrieve the account whenever needed. To later get a token with that account
+            // First retrieve the account with FindAccountAsync, and include that webaccount
+            // as a parameter to RequestTokenAsync or RequestTokenSilentlyAsync
+            if (webTokenRequestResult.ResponseStatus == WebTokenRequestStatus.Success)
             {
-                WebTokenRequest webTokenRequest = new WebTokenRequest(Provider, Scope, ClientID);
+                ApplicationData.Current.LocalSettings.Values.Remove(StoredAccountKey);
 
-                // rootPage.NotifyUser("Requesting Web Token", NotifyType.StatusMessage);
-
-                // If the user selected a specific account, RequestTokenAsync will return a token for that account.
-                // The user may be prompted for credentials or to authorize using that account with your app
-                // If the user selected a provider, the user will be prompted for credentials to login to a new account
-                WebTokenRequestResult webTokenRequestResult = await WebAuthenticationCoreManager.RequestTokenAsync(webTokenRequest);
-
-                // If a token was successfully returned, then store the WebAccount Id into local app data
-                // This Id can be used to retrieve the account whenever needed. To later get a token with that account
-                // First retrieve the account with FindAccountAsync, and include that webaccount
-                // as a parameter to RequestTokenAsync or RequestTokenSilentlyAsync
-                if (webTokenRequestResult.ResponseStatus == WebTokenRequestStatus.Success)
-                {
-                    ApplicationData.Current.LocalSettings.Values.Remove(StoredAccountKey);
-
-                    // ApplicationData.Current.LocalSettings.Values[StoredAccountKey] = webTokenRequestResult.ResponseData[0].WebAccount.Id;
-                    ApplicationData.Current.LocalSettings.Values["CurrentUserProviderId"] = webTokenRequestResult.ResponseData[0].WebAccount.WebAccountProvider.Id;
-                    ApplicationData.Current.LocalSettings.Values["CurrentUserId"] = webTokenRequestResult.ResponseData[0].WebAccount.Id;
-                }
-
-                this.OutputTokenResult(webTokenRequestResult);
-                this.LoggedIn?.Invoke(this, null);
+                // ApplicationData.Current.LocalSettings.Values[StoredAccountKey] = webTokenRequestResult.ResponseData[0].WebAccount.Id;
+                ApplicationData.Current.LocalSettings.Values["CurrentUserProviderId"] = webTokenRequestResult.ResponseData[0].WebAccount.WebAccountProvider.Id;
+                ApplicationData.Current.LocalSettings.Values["CurrentUserId"] = webTokenRequestResult.ResponseData[0].WebAccount.Id;
             }
-            catch (Exception ex)
-            {
-                // rootPage.NotifyUser("Web Token request failed: " + ex.Message, NotifyType.ErrorMessage);
-            }
+
+            this.OutputTokenResult(webTokenRequestResult);
+            this.LoggedIn?.Invoke(this, null);
+
         }
 
         private void OutputTokenResult(WebTokenRequestResult result)
@@ -227,16 +216,20 @@
         private void StoreNewAccountDataLocally(WebAccount account)
         {
             if (account.Id != string.Empty)
+            { }
+            catch (Exception ex)
             {
-                ApplicationData.Current.LocalSettings.Values["CurrentUserId"] = account.Id;
+                // rootPage.NotifyUser("Web Token request failed: " + ex.Message, NotifyType.ErrorMessage);
             }
+            ApplicationData.Current.LocalSettings.Values["CurrentUserId"] = account.Id;
+        }
             else
             {
                 // It's a custom account
                 ApplicationData.Current.LocalSettings.Values["CurrentUserId"] = account.UserName;
             }
 
-            ApplicationData.Current.LocalSettings.Values["ProviderID"] = account.WebAccountProvider.Id;
+    ApplicationData.Current.LocalSettings.Values["ProviderID"] = account.WebAccountProvider.Id;
             if (account.WebAccountProvider.Authority != null)
             {
                 ApplicationData.Current.LocalSettings.Values["Authority"] = account.WebAccountProvider.Authority;
@@ -248,8 +241,8 @@
         }
 
         public void ShowAccountController()
-        {
-            AccountsSettingsPane.Show();
-        }
+{
+    AccountsSettingsPane.Show();
+}
     }
 }
