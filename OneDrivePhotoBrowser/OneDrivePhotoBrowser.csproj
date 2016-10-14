@@ -98,6 +98,7 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Controllers\AccountController.cs" />
     <Compile Include="Controllers\ItemsController.cs" />
     <Compile Include="ItemDetail.xaml.cs">
       <DependentUpon>ItemDetail.xaml</DependentUpon>

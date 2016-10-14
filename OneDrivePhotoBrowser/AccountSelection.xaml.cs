@@ -25,6 +25,7 @@
 
 namespace OneDrivePhotoBrowser
 {
+    using Controllers;
     using Microsoft.Graph;
     using Microsoft.OneDrive.Sdk;
     using Microsoft.OneDrive.Sdk.Authentication;
@@ -34,7 +35,7 @@ namespace OneDrivePhotoBrowser
     using System.Threading.Tasks;
     using Windows.UI.Xaml;
     using Windows.UI.Xaml.Controls;
-    
+
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
@@ -156,6 +157,12 @@ namespace OneDrivePhotoBrowser
             {
                 this.Frame.Navigate(typeof(MainPage), e);
             }
+        }
+
+        private void windows_Click(object sender, RoutedEventArgs e)
+        {
+            AccountController ac = new AccountController();
+            ac.ShowAccountController();
         }
     }
 }
