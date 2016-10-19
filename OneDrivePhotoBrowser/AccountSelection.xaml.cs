@@ -46,7 +46,8 @@ namespace OneDrivePhotoBrowser
         {
             Business,
             Consumer,
-            ConsumerUwp
+            ConsumerUwp,
+            Windows
         }
         
         // Set these values to your app's ID and return URL.
@@ -122,6 +123,11 @@ namespace OneDrivePhotoBrowser
             this.InitializeClient(ClientType.ConsumerUwp, e);
         }
 
+        private void windows_Click(Object sender, RoutedEventArgs e)
+        {
+            this.InitializeClient(ClientType.Windows, e);
+        }
+
         private async void InitializeClient(ClientType clientType, RoutedEventArgs e)
         {
             var app = (App) Application.Current;
@@ -144,6 +150,12 @@ namespace OneDrivePhotoBrowser
                         this.scopes);
                     authTask = onlineIdAuthProvider.RestoreMostRecentFromCacheOrAuthenticateUserAsync();
                     app.OneDriveClient = new OneDriveClient(this.oneDriveConsumerBaseUrl, onlineIdAuthProvider);
+                    app.AuthProvider = onlineIdAuthProvider;
+                } else if (clientType == ClientType.Windows)
+                {
+                    var onlineIdAuthProvider = new AccountController();
+                    authTask = onlineIdAuthProvider.PromptUserSignin();
+                    app.OneDriveClient = new OneDriveClient(onlineIdAuthProvider);
                     app.AuthProvider = onlineIdAuthProvider;
                 }
                 else
@@ -175,11 +187,6 @@ namespace OneDrivePhotoBrowser
             {
                 this.Frame.Navigate(typeof(MainPage), e);
             }
-        }
-
-        private void windows_Click(object sender, RoutedEventArgs e)
-        {
-            accountController.ShowAccountController();
         }
     }
 }
