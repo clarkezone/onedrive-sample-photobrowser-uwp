@@ -8,6 +8,7 @@
     using Windows.Storage;
     using Windows.UI.ApplicationSettings;
     using System.Net.Http;
+    using System.Diagnostics;
 
     internal class AccountController : IAuthenticationProvider
     {
@@ -48,6 +49,58 @@
             }
         }
 
+        public Task AuthenticateRequestAsync(HttpRequestMessage request)
+        {
+            if (!string.IsNullOrEmpty(this.CurrentToken))
+            {
+                request.Headers.Add(nameof(System.Net.HttpRequestHeader.Authorization), $"bearer {this.CurrentToken}");
+            }
+
+            TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
+            tcs.SetResult(true);
+            return tcs.Task;
+        }
+
+        public async Task PromptUserSignin()
+        {
+            if (signinTask == null)
+            {
+                signinTask = new TaskCompletionSource<bool>();
+
+                if (!this.HasSavedCreds())
+                {
+                    AccountsSettingsPane.Show();
+
+                    //signinTask will be signalled after the picker returns
+                    //TODO: check cancel / failure
+
+                    await signinTask.Task;
+                } else
+                {
+                    await RefreshCurrentTokenAsync(false);
+                }
+
+            } else
+            {
+                throw new Exception("Signin already in progress");
+            }
+        }
+
+        private bool HasSavedCreds()
+        {
+            string providerId = ApplicationData.Current.LocalSettings.Values["CurrentUserProviderId"]?.ToString();
+            string accountId = ApplicationData.Current.LocalSettings.Values["CurrentUserId"]?.ToString();
+
+            if (!string.IsNullOrEmpty(providerId) && !string.IsNullOrEmpty(accountId))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         private async Task<string> GetTokenAsync()
         {
             string providerId = ApplicationData.Current.LocalSettings.Values["CurrentUserProviderId"]?.ToString();
@@ -81,30 +134,7 @@
             }
         }
 
-        public Task AuthenticateRequestAsync(HttpRequestMessage request)
-        {
-            if (!string.IsNullOrEmpty(this.CurrentToken))
-            {
-                request.Headers.Add(nameof(System.Net.HttpRequestHeader.Authorization), $"bearer: {this.CurrentToken}");
-            }
-
-            TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
-            tcs.SetResult(true);
-            return tcs.Task;
-        }
-
-        public Task PromptUserSignin()
-        {
-            //
-            if (signinTask == null)
-            {
-                signinTask = new TaskCompletionSource<bool>();
-                AccountsSettingsPane.Show();
-                return signinTask.Task;
-            }
-
-            return null;
-        }
+      
 
         private async Task AddWebAccount(AccountsSettingsPaneCommandsRequestedEventArgs e)
         {
@@ -175,8 +205,6 @@
             e.WebAccountProviderCommands.Add(providerCommand);
         }
 
-
-
         private async Task LogoffAndRemoveAccount()
         {
             if (ApplicationData.Current.LocalSettings.Values.ContainsKey(StoredAccountKey))
@@ -225,11 +253,18 @@
                 // ApplicationData.Current.LocalSettings.Values[StoredAccountKey] = webTokenRequestResult.ResponseData[0].WebAccount.Id;
                 ApplicationData.Current.LocalSettings.Values["CurrentUserProviderId"] = webTokenRequestResult.ResponseData[0].WebAccount.WebAccountProvider.Id;
                 ApplicationData.Current.LocalSettings.Values["CurrentUserId"] = webTokenRequestResult.ResponseData[0].WebAccount.Id;
-                signinTask.SetResult(true);
+                this.CurrentToken = webTokenRequestResult.ResponseData[0].Token;
+                if (signinTask != null)
+                {
+                    signinTask.SetResult(true);
+                }
             }
             else
             {
-                signinTask.SetException(new Exception("Not authorized"));
+                if (signinTask != null)
+                {
+                    signinTask.SetException(new Exception("Not authorized"));
+                }
             }
 
             this.OutputTokenResult(webTokenRequestResult);
