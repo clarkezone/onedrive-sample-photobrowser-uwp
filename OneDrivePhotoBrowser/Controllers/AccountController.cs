@@ -15,7 +15,7 @@
         private const string StoredAccountKey = "CurrentUserId";
         private const string MicrosoftAccountProviderId = "https://login.microsoft.com";
         private const string ConsumerAuthority = "consumers";
-        private const string AccountScopeRequested = "wl.basic";
+        private const string AccountScopeRequested = "wl.basic onedrive.readwrite";
         private const string AccountClientId = "none";
         private TaskCompletionSource<bool> signinTask;
 
@@ -53,7 +53,7 @@
         {
             if (!string.IsNullOrEmpty(this.CurrentToken))
             {
-                request.Headers.Add(nameof(System.Net.HttpRequestHeader.Authorization), $"bearer {this.CurrentToken}");
+                request.Headers.Add("Authorization", $"bearer {this.CurrentToken}");
             }
 
             TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
@@ -114,7 +114,7 @@
             WebAccountProvider provider = await WebAuthenticationCoreManager.FindAccountProviderAsync(providerId);
             WebAccount account = await WebAuthenticationCoreManager.FindAccountAsync(provider, accountId);
 
-            WebTokenRequest request = new WebTokenRequest(provider, "wl.basic");
+            WebTokenRequest request = new WebTokenRequest(provider, AccountScopeRequested);
 
             WebTokenRequestResult result = await WebAuthenticationCoreManager.GetTokenSilentlyAsync(request, account);
             if (result.ResponseStatus == WebTokenRequestStatus.UserInteractionRequired)
